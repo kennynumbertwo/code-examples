@@ -1,0 +1,82 @@
+{% comment %}
+  Example of a simple liquid component that renders a modal with content from a product metafield.
+  It uses Alpine.js to handle the modal state, transitions, focus trapping, and accessibility.
+  It uses alpines x-teleport directive to move the modal to the body element to avoid z-index issues.
+  Tailwind CSS is used for styling.
+{% endcomment %}
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('modal', () => ({
+      modalOpen: false,
+      openModal() {
+        this.modalOpen = true;
+        document.body.style.overflow = 'hidden';
+      },
+      closeModal() {
+        this.modalOpen = false;
+        document.body.style.overflow = 'auto';
+      },
+    }));
+  });
+</script>
+
+{%- liquid
+  assign short_title = product.metafields.custom.short_title
+  assign content = product.metafields.custom.formula_modal_content | metafield_tag
+-%}
+
+{% if content != blank %}
+  <div id="product-formula-info" class="contents" x-data="modal()">
+    <div class="pt-5">
+      <button
+        type="button"
+        @click.prevent="openModal"
+        :aria-expanded="modalOpen ? 'true' : 'false'"
+        aria-controls="modal--{{ section.id }}"
+        class="text-blue text-10 font-400 flex items-center gap-2"
+      >
+        <span>{% render 'svg--info' %}</span>
+        <span>Which {{ short_title }} is right for me?</span>
+      </button>
+    </div>
+    <template x-teleport="body">
+      <div
+        id="modal--{{ section.id }}"
+        class="fixed flex items-center justify-center top-0 left-0 right-0 bottom-0 p-4 bg-black/20 z-modal"
+        :aria-visible="modalOpen ? 'true' : 'false'"
+        role="dialog"
+        aria-label="Formula Modal"
+        aria-describedby="modalDescription"
+        x-show="modalOpen"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        x-trap="modalOpen"
+        @keydown.window.escape="closeModal"
+        @click="closeModal"
+      >
+        <div
+          id="modalDescription"
+          class="bg-paper relative pt-12 md:pt-18 pb-10 md:pb-16 px-8 md:px-14 max-w-[556px] rounded-20"
+        >
+          <button
+            type="button"
+            aria-label="close modal"
+            class="absolute top-[30px] right-[30px]"
+            @click.prevent="closeModal"
+          >
+            {% render 'svg--x', classes: 'w-6 h-6' %}
+          </button>
+          <div class="rte formula-modal">
+            {{ product.metafields.custom.formula_modal_content | metafield_tag }}
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+{% endif %}
